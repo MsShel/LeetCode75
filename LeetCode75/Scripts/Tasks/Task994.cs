@@ -13,6 +13,14 @@ public class Task994
     private int _height;
     private int _width;
 
+    private readonly Dictionary<Directions, Func<int, int, (int row, int column)>> _directions = new()
+    {
+        { Directions.Up, (row, column) => (row - 1, column) },
+        { Directions.Down, (row, column) => (row + 1, column) },
+        { Directions.Left, (row, column) => (row, column - 1) },
+        { Directions.Right, (row, column) => (row, column + 1) }
+    };
+
     public Task994()
     {
         int[][] grid = [[2, 1, 1], [1, 1, 0], [0, 1, 1]];
@@ -25,25 +33,10 @@ public class Task994
         _height = grid.First().Length;
 
         var visited = new HashSet<(int row, int column)>();
-        var freshCount = 0;
         var rotten = new Queue<(int row, int column, int minute)>();
         var minutes = 0;
 
-        for (var i = 0; i < _width; i++)
-        {
-            for (var j = 0; j < _height; j++)
-            {
-                switch (grid[i][j])
-                {
-                    case 2:
-                        rotten.Enqueue((i, j, 0));
-                        break;
-                    case 1:
-                        freshCount++;
-                        break;
-                }
-            }
-        }
+        var freshCount = CountOranges(grid, rotten, freshCount: 0);
 
         while (rotten.Count > 0)
         {
@@ -52,7 +45,7 @@ public class Task994
 
             foreach (var direction in Enum.GetValues<Directions>())
             {
-                if (!GetNeighbour(orange.row, orange.column, direction, out var position)) continue;
+                if (!GetNeighbourSecond(orange.row, orange.column, direction, out var position)) continue;
 
                 if (!visited.Add((position.row, position.column)))
                 {
@@ -71,6 +64,27 @@ public class Task994
         }
 
         return freshCount > 0 ? -1 : minutes;
+    }
+
+    private int CountOranges(int[][] grid, Queue<(int, int, int)> rotten, int freshCount)
+    {
+        for (var i = 0; i < _width; i++)
+        {
+            for (var j = 0; j < _height; j++)
+            {
+                switch (grid[i][j])
+                {
+                    case 2:
+                        rotten.Enqueue((i, j, 0));
+                        break;
+                    case 1:
+                        freshCount++;
+                        break;
+                }
+            }
+        }
+
+        return freshCount;
     }
 
     private bool GetNeighbour(int row, int column, Directions direction, out (int row, int column) position)
@@ -96,5 +110,17 @@ public class Task994
         position = (row, column);
 
         return row >= 0 && row < _width && column >= 0 && column < _height;
+    }
+
+    // Another implementation using Dictionary
+    private bool GetNeighbourSecond(int row, int column, Directions direction, out (int row, int column) position)
+    {
+        if (!_directions.TryGetValue(direction, out Func<int, int, (int, int)>? value))
+        {
+            throw new ArgumentOutOfRangeException(nameof(direction), direction, null);
+        }
+
+        position = value(row, column);
+        return position.row >= 0 && position.row < _width && position.column >= 0 && position.column < _height;
     }
 }
